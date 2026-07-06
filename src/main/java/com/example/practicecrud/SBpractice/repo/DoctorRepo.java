@@ -10,7 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface DoctorRepo extends JpaRepository<Doctor, Integer> {
-
+   
+   //derived query method
    Optional<Doctor>  findByDocterName(String docterName);
 
    Doctor findByDoctorType(String doctorType);
