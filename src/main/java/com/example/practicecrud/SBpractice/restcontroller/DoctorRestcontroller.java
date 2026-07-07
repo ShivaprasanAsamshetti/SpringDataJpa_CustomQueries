@@ -90,5 +90,18 @@ public class DoctorRestcontroller {
 
     }
 
+    @GetMapping("/sortedById")
+    public ResponseEntity<Apiresponse<List<DoctorDto>>> sortDoctorsById(){
+        List<DoctorDto> doctorDtos=doctorService.findDoctorBySortingIdDesc();
+        log.info("retrived doctor details to restcontroller");
+        Apiresponse<List<DoctorDto>> apiresponse=new Apiresponse<>();
+        apiresponse.setStatus(200);
+        apiresponse.setData(doctorDtos);
+        apiresponse.setMessage("sorted doctors based on id's");
+        return ResponseEntity
+                .status(200)
+                .body(apiresponse);
+    }
+
 
 }

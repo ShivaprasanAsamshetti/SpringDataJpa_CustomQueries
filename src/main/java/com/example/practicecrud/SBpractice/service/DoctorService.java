@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.print.Doc;
@@ -77,6 +78,19 @@ public class DoctorService {
 
         }
         return list;
+    }
+
+
+    public List<DoctorDto> findDoctorBySortingIdDesc(){
+        List<Doctor> doctors=doctorRepo.findAll(Sort.by("docterId").descending()
+                .and(Sort.by("docterName").ascending()));
+        List<DoctorDto> doctorDtos=new ArrayList<>();
+        for(Doctor doctor:doctors){
+            DoctorDto doctorDto=new DoctorDto();
+            BeanUtils.copyProperties(doctor,doctorDto);
+            doctorDtos.add(doctorDto);
+        }
+        return doctorDtos;
     }
 
 
