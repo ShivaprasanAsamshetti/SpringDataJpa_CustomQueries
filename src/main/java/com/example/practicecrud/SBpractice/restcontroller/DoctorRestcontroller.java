@@ -103,5 +103,18 @@ public class DoctorRestcontroller {
                 .body(apiresponse);
     }
 
+    @GetMapping("/Pagenumbers/{pageNumber}/{pageSize}")
+    public ResponseEntity<Apiresponse<List<DoctorDto>>> DoctorsBypagination(@PathVariable Integer pageNumber,@PathVariable Integer pageSize){
+        List<DoctorDto> doctorDtos=doctorService.getDoctorsByPagination(pageNumber,pageSize);
+        log.info("retrived doctor details to restcontroller");
+        Apiresponse<List<DoctorDto>> apiresponse=new Apiresponse<>();
+        apiresponse.setStatus(200);
+        apiresponse.setData(doctorDtos);
+        apiresponse.setMessage("Based on given pages we retrieved records");
+        return ResponseEntity
+                .status(200)
+                .body(apiresponse);
+    }
+
 
 }

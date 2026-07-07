@@ -8,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -66,7 +69,6 @@ public class DoctorService {
     }
 
 
-
     public List<DoctorDto> findByNameStartswithSAndGivenIds() {
         List<DoctorDto> list = new ArrayList<>();
 
@@ -81,19 +83,32 @@ public class DoctorService {
     }
 
 
-    public List<DoctorDto> findDoctorBySortingIdDesc(){
-        List<Doctor> doctors=doctorRepo.findAll(Sort.by("docterId").descending()
+    public List<DoctorDto> findDoctorBySortingIdDesc() {
+        List<Doctor> doctors = doctorRepo.findAll(Sort.by("docterId").descending()
                 .and(Sort.by("docterName").ascending()));
-        List<DoctorDto> doctorDtos=new ArrayList<>();
-        for(Doctor doctor:doctors){
-            DoctorDto doctorDto=new DoctorDto();
-            BeanUtils.copyProperties(doctor,doctorDto);
+        List<DoctorDto> doctorDtos = new ArrayList<>();
+        for (Doctor doctor : doctors) {
+            DoctorDto doctorDto = new DoctorDto();
+            BeanUtils.copyProperties(doctor, doctorDto);
             doctorDtos.add(doctorDto);
         }
         return doctorDtos;
     }
 
+    public List<DoctorDto> getDoctorsByPagination(int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Doctor> page = doctorRepo.findAll(pageable);
+        List<Doctor> doctorList = page.getContent();
+        List<DoctorDto> doctorDtos = new ArrayList<>();
+        for (Doctor doctor : doctorList) {
+            DoctorDto doctorDto = new DoctorDto();
+            BeanUtils.copyProperties(doctor, doctorDto);
+            doctorDtos.add(doctorDto);
+        }
 
+        return doctorDtos;
+
+    }
 
 
     //patch mapping
