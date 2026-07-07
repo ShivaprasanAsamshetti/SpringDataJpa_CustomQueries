@@ -401,3 +401,215 @@ Always use **Entity field names**.
 - Use `.and()` to sort by multiple fields.
 - Secondary sorting is applied only when the primary sorting field has duplicate values.
 - Always use **entity field names**, not database column names.
+
+
+
+
+
+Spring Data JPA - Pagination
+Definition
+
+Pagination is the process of dividing a large number of records into multiple pages, where each page contains a fixed number of records.
+
+Instead of loading all records from the database, only the required page is fetched.
+
+Why Pagination?
+
+Suppose the Doctor table contains 100,000 records.
+
+Without Pagination:
+
+Database
+   │
+100000 Records
+   │
+Spring Boot
+   │
+Client
+
+Problems:
+
+Slow response
+High memory consumption
+Increased network traffic
+Poor user experience
+
+With Pagination:
+
+Page 0 → Doctor 1 - Doctor 10
+
+Page 1 → Doctor 11 - Doctor 20
+
+Page 2 → Doctor 21 - Doctor 30
+
+Only the requested page is loaded.
+
+Repository Hierarchy
+Repository
+      ↑
+CrudRepository
+      ↑
+PagingAndSortingRepository
+      ↑
+JpaRepository
+
+JpaRepository inherits pagination support from PagingAndSortingRepository.
+
+Repository
+
+No repository method is required.
+
+@Repository
+public interface DoctorRepository extends JpaRepository<Doctor,Integer>{
+
+}
+
+Reason:
+
+JpaRepository already provides
+
+Page<T> findAll(Pageable pageable);
+Important Interfaces and Classes
+
+Pagination mainly uses three components.
+
+PageRequest
+      │
+implements
+      ▼
+Pageable (Interface)
+      │
+passed to
+      ▼
+findAll(Pageable pageable)
+      │
+returns
+      ▼
+Page<T>
+1. Pageable (Interface)
+Definition
+
+Pageable is an interface that represents pagination information.
+
+It stores:
+
+Current Page Number
+Page Size
+Sorting Information (optional)
+
+It does not create any object because it is an interface.
+
+Example:
+
+Pageable pageable;
+Why Interface?
+
+Just like
+
+List<String> list;
+
+List is an interface.
+
+Actual object:
+
+List<String> list = new ArrayList<>();
+
+Similarly,
+
+Pageable pageable;
+
+Actual object:
+
+Pageable pageable = PageRequest.of(0,5);
+2. PageRequest (Class)
+Definition
+
+PageRequest is a concrete class that implements the Pageable interface.
+
+It is used to create pagination information.
+
+Example
+
+PageRequest.of(pageNumber,pageSize);
+
+Example
+
+PageRequest.of(0,5);
+
+Means
+
+Page Number = 0
+
+Page Size = 5
+Why do we use PageRequest?
+
+Because interfaces cannot be instantiated.
+
+Wrong
+
+Pageable pageable = new Pageable();
+
+Correct
+
+Pageable pageable = PageRequest.of(0,5);
+
+Here
+
+PageRequest creates the object.
+That object is stored in the Pageable reference.
+3. Page<T>
+Definition
+
+Page<T> represents the paginated result returned from the database.
+
+Unlike List, it contains both:
+
+Records of the current page
+Pagination metadata
+
+Example
+
+Page<Doctor> page =
+doctorRepo.findAll(pageable);
+Why not List?
+
+If we write
+
+List<Doctor> doctors =
+doctorRepo.findAll(pageable);
+
+It won't work.
+
+Because Spring returns
+
+Page<Doctor>
+
+not
+
+List<Doctor>
+
+The Page object contains much more information.
+
+Flow
+Client
+      │
+pageNumber,pageSize
+      │
+Controller
+      │
+Service
+      │
+PageRequest.of(pageNumber,pageSize)
+      │
+Pageable
+      │
+Repository
+findAll(pageable)
+      │
+Database
+      │
+Page<Doctor>
+      │
+getContent()
+      │
+List<Doctor>
