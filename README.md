@@ -406,19 +406,23 @@ Always use **Entity field names**.
 
 
 
-Spring Data JPA - Pagination
-Definition
+# Spring Data JPA - Pagination
 
-Pagination is the process of dividing a large number of records into multiple pages, where each page contains a fixed number of records.
+## Definition
 
-Instead of loading all records from the database, only the required page is fetched.
+**Pagination** is the process of dividing a large number of records into multiple pages, where each page contains a fixed number of records.
 
-Why Pagination?
+Instead of loading all records from the database, **only the requested page is fetched**, improving application performance.
 
-Suppose the Doctor table contains 100,000 records.
+---
 
-Without Pagination:
+# Why Pagination?
 
+Suppose the **Doctor** table contains **100,000 records**.
+
+## Without Pagination
+
+```
 Database
    │
 100000 Records
@@ -426,25 +430,37 @@ Database
 Spring Boot
    │
 Client
+```
 
-Problems:
+### Problems
 
-Slow response
-High memory consumption
-Increased network traffic
-Poor user experience
+- Slow response time
+- High memory consumption
+- Increased network traffic
+- Poor user experience
+- Longer database execution time
 
-With Pagination:
+---
 
-Page 0 → Doctor 1 - Doctor 10
+## With Pagination
+
+```
+Page 0 → Doctor 1  - Doctor 10
 
 Page 1 → Doctor 11 - Doctor 20
 
 Page 2 → Doctor 21 - Doctor 30
 
-Only the requested page is loaded.
+...
+```
 
-Repository Hierarchy
+Only the requested page is loaded into memory.
+
+---
+
+# Repository Hierarchy
+
+```
 Repository
       ↑
 CrudRepository
@@ -452,27 +468,32 @@ CrudRepository
 PagingAndSortingRepository
       ↑
 JpaRepository
+```
 
-JpaRepository inherits pagination support from PagingAndSortingRepository.
+`JpaRepository` inherits pagination support from **PagingAndSortingRepository**.
 
-Repository
+No additional repository method is required.
 
-No repository method is required.
-
+```java
 @Repository
-public interface DoctorRepository extends JpaRepository<Doctor,Integer>{
+public interface DoctorRepository extends JpaRepository<Doctor, Integer> {
 
 }
+```
 
-Reason:
+Internally, `JpaRepository` already provides:
 
-JpaRepository already provides
-
+```java
 Page<T> findAll(Pageable pageable);
-Important Interfaces and Classes
+```
+
+---
+
+# Pagination Components
 
 Pagination mainly uses three components.
 
+```
 PageRequest
       │
 implements
@@ -486,120 +507,260 @@ findAll(Pageable pageable)
 returns
       ▼
 Page<T>
-1. Pageable (Interface)
-Definition
+```
 
-Pageable is an interface that represents pagination information.
+---
+
+# 1. Pageable (Interface)
+
+## Definition
+
+`Pageable` is an interface that represents pagination information.
 
 It stores:
 
-Current Page Number
-Page Size
-Sorting Information (optional)
+- Current page number
+- Page size
+- Sorting information (optional)
 
-It does not create any object because it is an interface.
+Since it is an **interface**, it cannot create objects directly.
 
-Example:
+Example
 
+```java
 Pageable pageable;
-Why Interface?
+```
 
-Just like
+---
 
+## Why is Pageable an Interface?
+
+Similar to Java Collections:
+
+```java
 List<String> list;
+```
 
-List is an interface.
+`List` is an interface.
 
 Actual object:
 
+```java
 List<String> list = new ArrayList<>();
+```
 
 Similarly,
 
+```java
 Pageable pageable;
+```
 
 Actual object:
 
-Pageable pageable = PageRequest.of(0,5);
-2. PageRequest (Class)
-Definition
+```java
+Pageable pageable = PageRequest.of(0, 5);
+```
 
-PageRequest is a concrete class that implements the Pageable interface.
+---
+
+# 2. PageRequest (Class)
+
+## Definition
+
+`PageRequest` is a concrete class that implements the `Pageable` interface.
 
 It is used to create pagination information.
 
+Syntax
+
+```java
+PageRequest.of(pageNumber, pageSize);
+```
+
 Example
 
-PageRequest.of(pageNumber,pageSize);
+```java
+Pageable pageable = PageRequest.of(0, 5);
+```
 
-Example
+Meaning
 
-PageRequest.of(0,5);
+- Page Number = **0**
+- Page Size = **5**
 
-Means
+---
 
-Page Number = 0
+## Why do we use PageRequest?
 
-Page Size = 5
-Why do we use PageRequest?
+Interfaces cannot be instantiated.
 
-Because interfaces cannot be instantiated.
+❌ Wrong
 
-Wrong
-
+```java
 Pageable pageable = new Pageable();
+```
 
-Correct
+✔ Correct
 
+```java
 Pageable pageable = PageRequest.of(0,5);
+```
 
-Here
+Here,
 
-PageRequest creates the object.
-That object is stored in the Pageable reference.
-3. Page<T>
-Definition
+- `PageRequest` creates the object.
+- That object is stored in the `Pageable` reference.
 
-Page<T> represents the paginated result returned from the database.
+---
 
-Unlike List, it contains both:
+# Understanding Page Number
 
-Records of the current page
-Pagination metadata
+Pagination uses **zero-based indexing**.
+
+| Page Number | Records |
+|-------------|---------|
+| 0 | 1 - 5 |
+| 1 | 6 - 10 |
+| 2 | 11 - 15 |
+| 3 | 16 - 20 |
+
+So,
+
+```java
+PageRequest.of(0,5)
+```
+
+means:
+
+```
+First Page
+5 Records
+```
+
+---
+
+# 3. Page<T>
+
+## Definition
+
+`Page<T>` represents the paginated result returned from the database.
+
+Unlike `List`, it contains:
+
+- Records of the current page
+- Pagination metadata
 
 Example
 
-Page<Doctor> page =
-doctorRepo.findAll(pageable);
-Why not List?
+```java
+Page<Doctor> page = doctorRepo.findAll(pageable);
+```
 
-If we write
+---
 
-List<Doctor> doctors =
-doctorRepo.findAll(pageable);
+## Why not List?
 
-It won't work.
+This is wrong:
 
-Because Spring returns
+```java
+List<Doctor> doctors = doctorRepo.findAll(pageable);
+```
 
+Because Spring Data JPA returns
+
+```java
 Page<Doctor>
+```
 
 not
 
+```java
 List<Doctor>
+```
 
-The Page object contains much more information.
+---
 
-Flow
+# Getting Records
+
+The actual records are obtained using
+
+```java
+page.getContent();
+```
+
+Example
+
+```java
+Page<Doctor> page = doctorRepo.findAll(pageable);
+
+List<Doctor> doctors = page.getContent();
+```
+
+---
+
+# Useful Methods of Page
+
+| Method | Description |
+|----------|-------------|
+| `getContent()` | Returns records of the current page |
+| `getTotalPages()` | Total number of pages |
+| `getTotalElements()` | Total number of records |
+| `getNumber()` | Current page number |
+| `getSize()` | Page size |
+| `hasNext()` | Checks if next page exists |
+| `hasPrevious()` | Checks if previous page exists |
+| `isFirst()` | Checks whether current page is first |
+| `isLast()` | Checks whether current page is last |
+| `getNumberOfElements()` | Number of records in current page |
+
+---
+
+# SQL Generated
+
+Example
+
+```java
+Pageable pageable = PageRequest.of(1,5);
+
+doctorRepo.findAll(pageable);
+```
+
+Generated SQL
+
+```sql
+SELECT *
+FROM doctor
+LIMIT 5 OFFSET 5;
+```
+
+Explanation
+
+```
+LIMIT 5
+```
+
+Return only 5 records.
+
+```
+OFFSET 5
+```
+
+Skip the first 5 records.
+
+---
+
+# Pagination Flow
+
+```
 Client
       │
-pageNumber,pageSize
+pageNumber, pageSize
       │
 Controller
       │
 Service
       │
-PageRequest.of(pageNumber,pageSize)
+PageRequest.of(pageNumber, pageSize)
       │
 Pageable
       │
@@ -613,3 +774,171 @@ Page<Doctor>
 getContent()
       │
 List<Doctor>
+```
+
+---
+
+# Complete Example
+
+```java
+Pageable pageable = PageRequest.of(0,5);
+
+Page<Doctor> page = doctorRepo.findAll(pageable);
+
+List<Doctor> doctors = page.getContent();
+```
+
+---
+
+# Important Points
+
+### Page Number starts from **0**
+
+```java
+PageRequest.of(0,5);
+```
+
+First page.
+
+---
+
+### Page Size
+
+```java
+PageRequest.of(0,10);
+```
+
+Returns **10 records**.
+
+---
+
+### Metadata is available only in `Page`
+
+Example
+
+```java
+page.getTotalPages();
+
+page.getTotalElements();
+
+page.hasNext();
+```
+
+A normal `List` cannot provide this information.
+
+---
+
+# Interview Questions
+
+### 1. What is Pagination?
+
+Pagination divides large datasets into multiple pages so that only the required records are fetched from the database.
+
+---
+
+### 2. Which repository supports Pagination?
+
+`JpaRepository`
+
+(It inherits the feature from `PagingAndSortingRepository`.)
+
+---
+
+### 3. Which method is used for Pagination?
+
+```java
+findAll(Pageable pageable);
+```
+
+---
+
+### 4. Which class creates the Pageable object?
+
+```java
+PageRequest
+```
+
+Example
+
+```java
+PageRequest.of(0,5);
+```
+
+---
+
+### 5. Why is Pageable an interface?
+
+Interfaces cannot be instantiated directly.
+
+`PageRequest` provides its implementation.
+
+---
+
+### 6. Why does `findAll(Pageable)` return `Page<T>` instead of `List<T>`?
+
+Because `Page<T>` contains:
+
+- Records
+- Total pages
+- Total records
+- Current page
+- Next/Previous page information
+
+---
+
+### 7. Which method returns only the records?
+
+```java
+page.getContent();
+```
+
+---
+
+### 8. Does pagination start from page 1?
+
+No.
+
+Spring Data JPA uses **zero-based indexing**.
+
+```
+0 → First page
+
+1 → Second page
+
+2 → Third page
+```
+
+---
+
+### 9. Can Pagination be combined with Sorting?
+
+Yes.
+
+```java
+Pageable pageable =
+PageRequest.of(
+        0,
+        5,
+        Sort.by("doctorName")
+);
+```
+
+This returns:
+
+- First page
+- 5 records
+- Sorted by doctorName
+
+---
+
+# Key Takeaways
+
+- Pagination improves performance by fetching only the required records.
+- `JpaRepository` provides pagination support.
+- `Pageable` is an interface that stores pagination information.
+- `PageRequest` implements `Pageable` and creates pagination objects.
+- `Page<T>` contains both records and pagination metadata.
+- `getContent()` returns the records of the current page.
+- Page numbering starts from **0**.
+- Pagination can be combined with sorting.
+- Spring Data JPA internally generates SQL using **LIMIT** and **OFFSET**.
